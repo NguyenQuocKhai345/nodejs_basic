@@ -37,7 +37,7 @@ confligViewEngine(app);
 
 // khai bao route
 
-app.use('/abc', webRoutes)
+app.use('/', webRoutes)
 
 //test connect mysql
 
@@ -46,7 +46,7 @@ connection.query(
     'Select * from Users u',
     function (err, results, fields) {
         console.log('>>Checkresults :', results); // results contains rows returned by server
-        console.log('>>Checkfields :', fields); // fields contains extra meta data about results, if available
+        //console.log('>>Checkfields :', fields); // fields contains extra meta data about results, if available
     }
 )
 

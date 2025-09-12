@@ -79,6 +79,7 @@ sẽ khai báo với express rằng các file static như images,css,.. sẽ ở
 # Docker để chạy Database: giúp dự án chạy đc trên nhiều loại máy, version
 # DBeaver để kết nối với database
 # Cách kết nối Database:
+// Cách này sẽ ko áp dụng trong thực tế
  - Khai báo: const mysql = require('mysql2');
  - Connect đến database:
     const connection = mysql.createConnection({
@@ -107,3 +108,5 @@ sẽ khai báo với express rằng các file static như images,css,.. sẽ ở
         }
     )
     // Result là những dữ liệu cần chú ý
+
+//Thực hiện kết nối database thực tế với pools: giới hạn số lượng truy cập để tránh quá tải 
