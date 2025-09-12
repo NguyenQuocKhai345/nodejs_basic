@@ -1,0 +1,109 @@
+#Sử Dụng 1 Engine:
+1. cài đặt
+2. 
+app.set('views', path.join(__dirname, 'views')); // set folder views
+nó sẽ tự động tìm đến đúng folder views dù ta chạy file server.js ở bất kỳ đâu
+(const path = require('path');)
+3. rồi mới gọi res
+
+
+#Sử dụng file .env để lưu trữ, khai báo các tham số môi trường
+- Phải cài đặt thư viện dotenv mới sd được
+- khai bao: require('dotenv').config(); // goi dotenv
+- goi : process.env.PORT
+
+#Sử dụng nodemon để tự động cập nhật trang
+- thay node trong "start" bang nodemon de su dung
+
+
+#Sử dụng static file:
+-Khai báo: app.use(express.static(path.join(__dirname, 'public'))); // set folder public
+sẽ khai báo với express rằng các file static như images,css,.. sẽ ở trong thư mục 'public,
+
+
+#Cách tách conflig viewEngine:
+-Khai báo tất cả các requuire cần thiết:
+    const path = require('path');
+    const express = require('express');
+-Move engine cònlig vào file:
+    const confligViewEngine = (app) => {
+        app.set('views', path.join('./src', 'views')); // set folder views
+        app.set('view engine', 'ejs'); // set view engine
+
+        //conflig static file
+        app.use(express.static(path.join('./src', 'public'))); // set folder public
+    }
+
+    phải sử dụng ./src thay __dirname vì __dirname sẽ chiếu đến folder hiện tại(conflig) trong khi cái folder views và public lại ở src
+- module.exports = confligViewEngine; // để có thể sử dụng  confligViewEngine trong file server
+- confligViewEngine(app); gọi confligViewEngine trong file server
+
+#Cách tách routes:
+- Khai báo cần thiết:
+    const express = require('express')
+    const router = express.Router();
+- Copy các hàm từ server qua file khác, lưu ý thay thế app -> router :
+    router.get('/', (req, res) => {
+        // res.send('Hello World');
+        res.render('sample.ejs');
+    });
+    router.get('/abc', (req, res) => {
+        res.send('Check abc/nodemon');
+    });
+    router.get('/html', (req, res) => {
+        res.send('<h1>Check html</h1>');
+    });
+- module.exports = router; // để dùng router trong file server
+- Khai báo trong file server: const webRoutes = require('./routes/web')
+ Vì dùng module.exports nên sẽ tự động map webRoutes vào router nên k cần đặt tên giống nhau
+- Sử dụng trong server: 
+    app.use('/', webRoutes)
+    lưu ý webRoutes sẽ đc thực thi sau đường link '/' 
+    VD: nếu link là '/abc' thì phải truy cập đến http://localhost:3000/abc mới hiển thị các phần trong webRoutes
+
+
+# Cách tách code từ route sang các hàm con từ file thực thi khác:
+ - Copy chi tiết thực thi các hàm từ file tổng route vào ở trong các file thực thi:
+    const getHomePage = (req, res) => {
+        return res.send('Hello World from controller');
+    }
+ - module.exports = {
+        getHomePage,
+        getABC
+    }
+    // export các hàm
+ - Gọi trong route:
+    router.get('/home', getHomePage);
+    router.get('/abc', getABC);
+
+# Docker để chạy Database: giúp dự án chạy đc trên nhiều loại máy, version
+# DBeaver để kết nối với database
+# Cách kết nối Database:
+ - Khai báo: const mysql = require('mysql2');
+ - Connect đến database:
+    const connection = mysql.createConnection({
+        host: 'localhost',
+        port: 3307, //default 3306
+        user: 'root', // default empty
+        password: '123456',
+        database: 'hoidanit'
+    });
+    // khai báo như này sẽ khó bỏa trì , fix
+
+    Nên dùng:
+    const connection = mysql.createConnection({
+        host: process.env.DB_HOST, // default localhost
+        port: process.env.DB_PORT, //default 3306
+        user: process.env.DB_USER, // default empty
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME
+    });
+ - Gọi Query:
+    connection.query(
+        'Select * from Users u',
+        function (err, results, fields) {
+            console.log('>>Checkresults :', results); // results contains rows returned by server
+            console.log('>>Checkfields :', fields); // fields contains extra meta data about results, if available
+        }
+    )
+    // Result là những dữ liệu cần chú ý
