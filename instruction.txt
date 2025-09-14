@@ -110,3 +110,109 @@ sẽ khai báo với express rằng các file static như images,css,.. sẽ ở
     // Result là những dữ liệu cần chú ý
 
 //Thực hiện kết nối database thực tế với pools: giới hạn số lượng truy cập để tránh quá tải 
+
+    const connection = mysql.createPool({
+        host: process.env.DB_HOST,  // default localhost
+        port: process.env.DB_PORT,  //default 3306
+        user: process.env.DB_USER,  // default empty
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+        waitForConnections: true,   // chờ khi hết kết nối thay vì báo lỗi ngay
+        connectionLimit: 10,        // tối đa 10 kết nối cùng lúc trong pool
+        queueLimit: 0               // số lượng request kết nối được xếp hàng (0 = không giới hạn)
+    });
+
+// Tuy nhiên nên thực thi theo async await thì sẽ tường minh hơn:
+        let { email, name, city } = req.body;
+        let [results, fields] = await connection.query(
+            `INSERT INTO Users (email, name, city) VALUES (?, ?, ?)`, [email, name, city]
+        );
+        console.log('>>check results: ', results)
+        res.send('Create user success')
+
+    Chú ý database phải import promise: const mysql = require('mysql2/promise');
+
+    
+# Lấy input từ form bằng req.body:
+    - Khai báo để sử dụng req.body
+        //conflig req.body
+        app.use(express.urlencoded({ extended: true })); // for form data
+        app.use(express.json()); // for json
+
+    - Hiện thực form kèm action:
+        <form action="/create" method="POST">
+            <fieldset>
+                <legend>Add new user</legend>
+                    <div class="input-group">
+                        <label>Email : </label>
+                        <input type="text" name="email">
+                    </di
+                    <div class="input-group">
+                        <label>Name : </label>
+                        <input type="text" name="name">
+                    </div>
+                    <div class="input-group">
+                        <label>City : </label>
+                    <input type="text" name="city">
+                    </div>
+                    <div>
+                        <button class="save">Save</button>
+                    </div>
+            </fieldset>
+        </form>
+
+    - form action="/create" method="POST" : sẽ chuyển qua route 'create' với lện post được nhận
+    - Thêm các name="email", name="name", name="city" để nhận diện các dữ liệu lấy từ input
+    - Dùng req.body để lấy dữ liệu:
+        const postCreateUser = (req, res) => {
+            console.log('req.body :', req.body);
+            // xu ly them user
+            return res.send('Post request to create new user from controller');
+        }
+
+# Sự khác biệt giữa async await và call back function: // Nên dùng async await hơn
+ - Async await sẽ chạy tuần tự code từ trên xuống dưới, tránh được trường hợp dữ liệu chưa được load mà đã phải return
+ - Call back function sẽ chạy code ngay tại thời điểm goi
+ VD: const getHomePage = async (req, res) => {
+        let results = await getAllUsers();
+        console.log('>>Checkresults :', results); // results contains rows returned by server
+        return res.render('home.ejs', { listUser: results });
+    }
+    Với Async await sẽ phải đợi results lấy kết quả từ getAllUsers đã rồi mới được return
+    Với Call back func sẽ return luôn ngay lúc chạy đến mặc kệ results đã lấy được dữ liệu từ getAllUsers hay chưa, nên rất dễ dữ liệu sẽ thiếu hoặc rỗng.
+
+# Lấy dữu liệu từ database trong ejs:
+    <%=JSON.stringify(listUser) %>
+
+# Lấy động tham số:
+ - khai route động: router.get('/update/:id', getUpdateUser); // id chỉ là tên biến muốn đặt như nào cx đc
+ - Check : 
+    const getUpdateUser = (req, res) => {
+        console.log('>>>Check req.params:', req.params);
+        return res.render('edit.ejs')
+    }
+ - gán route động cho button: <a href="/update/<%= user.id %>"><button>Edit</button></a>
+
+
+
+# ----------------------------------------------
+# ------ Cách lấy và update dữ liệu ------------
+# ----------------------------------------------
+- nhảy đến route mới khi nhấn edit
+    <a href="/update/<%= user.id %>"><button>Edit</button></a>
+- Gọi hàm lấy dữ liệu:
+    router.get('/update/:id', getUpdateUser);
+- Render edit.ejs và truyền dữ liệu của obj đang gọi tới:
+    const getUpdateUser = async (req, res) => {
+        let userId = req.params.id;
+        let [results, fields] = await connection.query('SELECT * FROM Users WHERE id = ?', [userId]);
+        let user = results && results.length > 0 ? results[0] : {};
+        return res.render('edit.ejs', { userEdit: user });
+    }
+- Cập nhật dữ liệu và post (trong edit.ejs)
+- gọi : router.post('/update/:id', postUpdateUser);
+- const postUpdateUser = async (req, res) => {
+    let { email, name, city, userId } = req.body;               // lấy dữ liệu hiện có
+    await updateUserById(email, name, city, userId);            // cập nhật dữ liệu
+    res.redirect('/');                                          //quay về trang home sau khi update xong
+}

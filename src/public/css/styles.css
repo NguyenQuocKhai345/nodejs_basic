@@ -50,3 +50,7 @@
     cursor: pointer;
     margin: 10px;
 }
+
+.d-none {
+    display: none;
+}
